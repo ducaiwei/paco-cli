@@ -15,7 +15,7 @@ exports.log = function(...args) {
 
 /**
  * Log an message to the console adn exit
- * @param {String} messgae 
+ * @param {String} messgae
  */
 exports.fatal = function(...args) {
     if(args[0] instanceof Error) args[0] = args[0].message.trim()
@@ -25,7 +25,7 @@ exports.fatal = function(...args) {
 }
 /**
  * Log a success message to the console and exit
- * @param {String} messgae 
+ * @param {String} messgae
  */
 exports.success = function(...args) {
     const msg = format.apply(format, args)
