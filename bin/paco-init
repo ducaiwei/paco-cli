@@ -1,0 +1,14 @@
+#!/usr/bin/env node
+
+const download = require('download-git-repo')
+const program = require('commander')
+const exists = require('fs').existsSync
+const path = require('path')
+const ora = require('ora')
+const home = require('user-home')
+const tildify = require('tildify')
+//修改控制台中字符串样式
+const chalk = require('chalk')
+const inquirer = require('inquirer')
+const rm = require('rimraf').sync
+const logger = require('../src/logger')
