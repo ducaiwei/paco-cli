@@ -12,3 +12,4 @@ const chalk = require('chalk')
 const inquirer = require('inquirer')
 const rm = require('rimraf').sync
 const logger = require('../src/logger')
+const generate = require('../src/generate')
