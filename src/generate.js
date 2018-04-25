@@ -42,11 +42,77 @@ module.exports = function generate (name, src, dest, done) {
         opts.metalsmith.before(metalsmith, opts, before)
     }
     metalsmith.use(askQuestion(opts.prompts))
-                      .use()
+                      .use(filterFiles(opts.filters))
+                      .use(renderTemplateFiles(opts.skipInterpolation))
+
+    if (typeof opts.metalsmith === 'function') {
+        opts.metalsmith(metalsmith, opts, helpers)
+    } else if (opts.metalsmith && typeof opts.metalsmith.after === 'function') {
+        opts.metalsmith.after(metalsmith, opts, helpers)
+    }
+    metalsmith.clean(false)
+                      .source('.')
+                      .destination(dest)
+                      .build((err, files) => {
+                            done(err)
+                            if (typeof opts.complete === 'function') {
+                                const helpers = {chalk, logger, files}
+                                opts.complete(data, helpers)
+                            } else {
+                                logMessage(opts.completeMessage, data)
+                            }
+                      })
+    return data
 }
 
 function askQuestion (prompts) {
     return (files, metalsmith, done) => {
         ask(prompts, metalsmith.metadata(), done)
     }
+}
+
+/**
+ *
+ * @param {*} skipInterpolation
+ */
+function renderTemplateFiles (skipInterpolation) {
+    skipInterpolation = typeof skipInterpolation === 'string' ? [skipInterpolation] : skipInterpolation
+    return (files, metalsmith, done) => {
+        const keys = Object.keys(files)
+        const metalsmithMetaData = metalsmith.metadata()
+        async.each(keys, (file, next) => {
+            // skipping files with skipInterpolation option
+            if (skipInterpolation && multimatch([file], skipInterpolation, { dot: true }).length) {
+                return next()
+            }
+            const str = files[file].contents.toString()
+             // do not attempt to render files that do not have mustaches
+            if (!/{{([^{}]+)}}/g.test(str)) {
+                return next()
+            }
+            render(str, metalsmithMetaData, (err, res) => {
+                if (err) {
+                    err.message = `[${file}] ${err.message}`
+                    return next(err)
+                }
+                files[file].contents = new Buffer(res)
+                next()
+            })
+        }, done)
+    }
+}
+/**
+ *
+ * @param {String} message
+ * @param {Object} data
+ */
+function logMessage (message, data) {
+    if (!message) return
+    render(message, data, (err, res) => {
+        if (err) {
+            console.error('\n   Error when rendering template complete message: ' + err.message.trim())
+        } else {
+            console.log('\n' + res.split(/\r?\n/g).map(line => '   ' + line).join('\n'))
+        }
+    })
 }
